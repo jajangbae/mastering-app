@@ -1,24 +1,20 @@
 {
-  "name": "DJ MASTER PRO - STUDIO EDITION",
-  "short_name": "DJ MASTER PRO",
-  "description": "Professional Audio Mastering Studio Edition with 24-bit export.",
+  "name": "DJ MASTER PRO",
+  "short_name": "DJMASTER",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#050505",
+  "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait",
   "icons": [
     {
       "src": "icon192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
       "src": "icon512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
