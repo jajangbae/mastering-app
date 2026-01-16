@@ -1,42 +1,23 @@
-{
-  "id": "com.basstaramusic.djpro",
-  "name": "DJ MASTER PRO",
-  "short_name": "DJMASTER",
-  "description": "Aplikasi Mastering Audio Profesional untuk hasil suara berkualitas tinggi.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "portrait",
-  "categories": ["music", "utilities"],
-  "prefer_related_applications": false,
-  "icons": [
+"screenshots": [
     {
-      "src": "icon192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "screen1.jpg",
+      "sizes": "1053x1872",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Home Screen"
     },
     {
-      "src": "icon512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "icon512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Tampilan Utama DJ Master Pro"
+      "src": "screen1.jpg",
+      "sizes": "1053x1872",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Music Player"
     },
     {
-      "src": "icon512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "label": "Tampilan Utama DJ Master Pro"
+      "src": "screen1.jpg",
+      "sizes": "1053x1872",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Settings"
     }
   ]
-}
