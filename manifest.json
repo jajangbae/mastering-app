@@ -1,20 +1,25 @@
 {
+  "id": "com.basstara.djmasterpro",
   "name": "DJ MASTER PRO",
   "short_name": "DJMASTER",
-  "start_url": "/index.html",
+  "description": "Aplikasi Mastering Audio Profesional untuk hasil suara berkualitas tinggi.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
