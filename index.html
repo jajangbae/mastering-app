@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="icon512.png">
+    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
+
+    <title>DJ MASTER PRO - STUDIO EDITION</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --panel: #111;
+            --neon-blue: #0088ff;
+            --alert-red: #ff3333;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: #000;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px solid #222;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0; 
+            font-size: 1.8rem;
+            font-weight: 900; 
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ffd700, #ffffff, #ffd700);
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+        }
+        @keyframes shine { to {background-position: 200%;} }
+
+        .subtitle { font-size: 0.6rem; color: #888; letter-spacing: 3px; margin-top: 5px; }
+
+        .screen-container {
+            position: relative;
+            flex-grow: 1; 
+            background: #000;
+            overflow: hidden;
+            border-bottom: 4px solid #333;
+        }
+        #matrixCanvas { position: absolute; top:0; left:0; width:100%; height:100%; z-index:1; opacity: 0.5; }
+        #vizCanvas { position: absolute; bottom:0; left:0; width:100%; height:100%; z-index:2; }
+
+        .controls {
+            background: var(--panel);
+            min-height: 50%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        .upload-trigger {
+            background: #0a0f0a; border: 1px dashed var(--neon-blue);
+            color: var(--neon-blue); font-family: 'Courier New', monospace;
+            padding: 15px; border-radius: 4px; text-align: center;
+            font-size: 0.9rem; cursor: pointer; text-transform: uppercase;
+            transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .upload-trigger:active { background: #001a33; }
+        .upload-trigger.loaded { border-style: solid; background: #001a33; border-color: var(--neon-blue); color: white; text-shadow: 0 0 5px var(--neon-blue); }
+        input[type="file"] { display: none; }
+
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        button {
+            padding: 15px; border: none; border-radius: 6px;
+            font-weight: 800; font-size: 0.9rem; cursor: pointer;
+            text-transform: uppercase; opacity: 0.5; pointer-events: none;
+            box-shadow: 0 3px 0 #000; transition: 0.1s;
+        }
+        button.ready { opacity: 1; pointer-events: all; }
+        button:active { transform: translateY(3px); box-shadow: none; }
+        .btn-play { background: #333; color: white; border: 1px solid #555; }
+        .btn-play.playing { background: white; color: black; box-shadow: 0 0 20px white; }
+        .btn-save { background: linear-gradient(135deg, #0044cc, #0088ff); color: white; }
+
+        .terminal-window {
+            flex-grow: 1;
+            background: #000; border: 1px solid #333; padding: 10px;
+            font-family: 'Courier New', monospace; font-size: 0.7rem; color: var(--neon-blue);
+            overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end;
+        }
+        .log-line { margin: 1px 0; }
+
+        .platform-row {
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 12px; background: #080808; border: 1px solid #222; border-radius: 6px;
+        }
+        .link-icon {
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; color: inherit; cursor: pointer;
+        }
+        .platform-icon { width: 26px; height: 26px; opacity: 1; transition: 0.3s; }
+        .platform-icon:hover { transform: scale(1.2); }
+        .spotify { color: #1DB954; }
+        .youtube { color: #FF0000; }
+        .apple { color: #ffffff; }
+        .tiktok { color: #00f2ea; }
+        .facebook { color: #1877F2; }
+
+        .master-unit {
+            background: #111; border: 1px solid #222; border-radius: 6px;
+            padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
+            margin-top: 5px;
+        }
+        .unit-label { font-size: 0.7rem; color: #888; font-weight: bold; }
+        .lamp-box { display: flex; align-items: center; gap: 8px; }
+        .lamp-text { font-size: 0.6rem; color: #aa0000; font-weight: bold; }
+        .detect-lamp {
+            width: 18px; height: 18px; background: #440000; border: 2px solid #660000;
+            border-radius: 50%; transition: 0.05s;
+        }
+        .detect-lamp.on { background: #ff0000; border-color: #ffaaaa; box-shadow: 0 0 15px #ff0000; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>DJ MASTER PRO</h1>
+        <div class="subtitle">DYNAMIC AUDIO MASTERING • 24-BIT</div>
+    </header>
+
+    <div class="screen-container">
+        <canvas id="matrixCanvas"></canvas>
+        <canvas id="vizCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <input type="file" id="fInput" accept="audio/*">
+        
+        <div class="upload-trigger" id="loadBtn" onclick="openFile()">
+            [ TAP TO LOAD AUDIO ]
+        </div>
+
+        <div class="btn-row">
+            <button id="btnPlay" class="btn-play" onclick="togglePlay()">PREVIEW</button>
+            <button id="btnSave" class="btn-save" onclick="renderWav()">SAVE HQ WAV</button>
+        </div>
+
+        <div class="terminal-window" id="terminal">
+            <div class="log-line">> SYSTEM READY.</div>
+            <div class="log-line">> ENGINE: HIGH FIDELITY.</div>
+        </div>
+
+        <div class="platform-row">
+            <a href="javascript:void(0)" onclick="openExternal('https://open.spotify.com/artist/4TuJxtldv5TibIvotg54hL?si=Wc1wTZJpS-2A7qVu5mHYaQ')" class="link-icon"><svg class="platform-icon spotify" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.24z"/></svg></a>
+            <a href="javascript:void(0)" onclick="openExternal('https://music.apple.com/us/artist/basstara/1864605305')" class="link-icon"><svg class="platform-icon apple" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.5 1.3 0 2.52.87 3.29.87.76 0 2.21-1.04 3.71-0.88 1.55.13 2.94 1.01 3.77 2.22-3.16 1.89-2.61 6.53.52 7.82V19.5zM13 3.5c.55-1.48 2.05-2.53 3.66-2.5 0 1.57-1.05 3.1-2.41 3.64-1.54.6-2.67-.18-1.25-1.14z"/></svg></a>
+            <a href="javascript:void(0)" onclick="openExternal('https://youtube.com/@basstaramusic?si=csFezrv-Rkhg04FG')" class="link-icon"><svg class="platform-icon youtube" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+            <a href="javascript:void(0)" onclick="openExternal('https://www.tiktok.com/@basstaramusic')" class="link-icon"><svg class="platform-icon tiktok" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg></a>
+            <a href="javascript:void(0)" onclick="openExternal('https://www.facebook.com/share/1DGGtJfaWa/')" class="link-icon"><svg class="platform-icon facebook" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+        </div>
+
+        <div class="master-unit">
+            <div class="unit-label">OUTPUT MONITOR /// SMART ENHANCE</div>
+            <div class="lamp-box">
+                <span class="lamp-text">CLIP</span>
+                <div class="detect-lamp" id="bassLamp"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 1. MATRIX RAIN HD ---
+    const mc = document.getElementById('matrixCanvas');
+    const mctx = mc.getContext('2d');
+    const chars = "10 AUDIO 24BIT 0101 WAV ";
+    const fontSize = 16; let drops = [];
+
+    function resizeMatrix() {
+        mc.width = mc.offsetWidth; mc.height = mc.offsetHeight;
+        const columns = Math.ceil(mc.width / fontSize);
+        if(drops.length === 0 || Math.abs(drops.length - columns) > 5) {
+            drops = []; for(let x = 0; x < columns; x++) drops[x] = Math.random() * -100;
+        }
+    }
+    window.addEventListener('resize', resizeMatrix); setTimeout(resizeMatrix, 100); 
+
+    function drawMatrix() {
+        mctx.fillStyle = "rgba(0, 0, 0, 0.05)"; mctx.fillRect(0, 0, mc.width, mc.height);
+        mctx.fillStyle = "#0088ff"; mctx.font = "bold 15px monospace"; 
+        for(let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            mctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if(drops[i] * fontSize > mc.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+        requestAnimationFrame(drawMatrix);
+    }
+    drawMatrix();
+
+    // --- 2. LOGGING ---
+    const term = document.getElementById('terminal');
+    const logs = ["ANALYZING SPECTRUM...", "REMOVING HARSHNESS...", "TIGHTENING LOW END...", "STEREO WIDENING...", "LIMITER: -1dB", "HEADROOM SECURE"];
+    function addLog(msg) {
+        const div = document.createElement('div'); div.className = 'log-line'; div.innerText = "> " + msg;
+        term.appendChild(div); if(term.children.length > 5) term.removeChild(term.children[0]);
+    }
+
+    // --- 3. EXTERNAL LINKS ---
+    function openExternal(url) {
+        try {
+            if (window.AppInventor && window.AppInventor.setWebViewString) {
+                window.AppInventor.setWebViewString("LINK:" + url);
+            } else {
+                window.open(url, "_blank");
+            }
+        } catch(e) { window.open(url, "_blank"); }
+    }
+
+    // --- 4. AUDIO ENGINE ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let actx = null, buffer = null, srcNode = null, isPlaying = false;
+
+    const loadBtn = document.getElementById('loadBtn');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnSave = document.getElementById('btnSave');
+    const lamp = document.getElementById('bassLamp');
+    const vc = document.getElementById('vizCanvas'), vctx = vc.getContext('2d');
+    const fInput = document.getElementById('fInput');
+
+    function openFile() { 
+        if(actx && actx.state === 'suspended') actx.resume();
+        fInput.value = null; 
+        fInput.click(); 
+    }
+
+    fInput.addEventListener('change', async (e) => {
+        let f = e.target.files[0]; if(!f) return;
+        if(isPlaying) { try{srcNode.stop()}catch(e){} isPlaying=false; btnPlay.innerText="PREVIEW"; btnPlay.classList.remove('playing'); }
+        if(actx) await actx.close();
+        actx = new AudioContext();
+
+        loadBtn.innerText = "LOADED: " + f.name.substring(0,18);
+        loadBtn.classList.add('loaded');
+        btnPlay.classList.add('ready'); btnSave.classList.add('ready');
+        addLog("AUDIO LOADED. READY TO MASTER.");
+
+        try {
+            let ab = await f.arrayBuffer();
+            actx.decodeAudioData(ab, (b) => { buffer = b; });
+        } catch(err) { addLog("ERROR: FILE CORRUPT."); }
+    });
+
+    // --- AUDIO CHAIN ---
+    function chain(ac, src, dest) {
+        // Pre-Gain
+        let preGain = ac.createGain(); preGain.gain.value = 1.1;
+
+        // Cleanup
+        let hpf = ac.createBiquadFilter(); hpf.type="highpass"; hpf.frequency.value=40; hpf.Q.value=0.7;
+        let mud = ac.createBiquadFilter(); mud.type="peaking"; mud.frequency.value=300; mud.gain.value=-3.5; mud.Q.value=1.5;
+        let bass = ac.createBiquadFilter(); bass.type="lowshelf"; bass.frequency.value=60; bass.gain.value=2.5;
+        
+        // De-Harsh
+        let harsh = ac.createBiquadFilter(); harsh.type="peaking"; harsh.frequency.value=3200; harsh.gain.value=-2.5; harsh.Q.value=2.0;
+        let deesser = ac.createBiquadFilter(); deesser.type = "peaking"; deesser.frequency.value = 7500; deesser.Q.value = 1.5; deesser.gain.value = -4.5; 
+        let cut = ac.createBiquadFilter(); cut.type="highshelf"; cut.frequency.value=12000; cut.gain.value=-1.5;
+
+        // Dynamics
+        let comp = ac.createDynamicsCompressor(); 
+        comp.threshold.value=-24; comp.ratio.value=3; comp.attack.value=0.01; comp.release.value=0.15; 
+        let makeUp = ac.createGain(); makeUp.gain.value=1.2;
+        let lim = ac.createDynamicsCompressor(); 
+        lim.threshold.value=-1.0; lim.ratio.value=20; lim.attack.value=0.002;
+        let outGain = ac.createGain(); outGain.gain.value=1.0;
+
+        src.connect(preGain); preGain.connect(hpf); hpf.connect(mud); mud.connect(bass);    
+        bass.connect(harsh); harsh.connect(deesser); deesser.connect(cut); cut.connect(comp); 
+        comp.connect(makeUp); makeUp.connect(lim); lim.connect(outGain); outGain.connect(dest);
+    }
+
+    function togglePlay() {
+        if(!buffer) return;
+        if(isPlaying) {
+            srcNode.stop(); isPlaying=false;
+            btnPlay.innerText="PREVIEW"; btnPlay.classList.remove('playing');
+            lamp.className="detect-lamp"; return;
+        }
+        srcNode = actx.createBufferSource(); srcNode.buffer = buffer;
+        let ana = actx.createAnalyser(); ana.fftSize=256;
+        chain(actx, srcNode, ana); ana.connect(actx.destination);
+        srcNode.start(0); isPlaying=true;
+        btnPlay.innerText="STOP"; btnPlay.classList.add('playing');
+        addLog("PLAYBACK STARTED...");
+        
+        vc.width = vc.parentNode.offsetWidth; vc.height = vc.parentNode.offsetHeight;
+        let len=ana.frequencyBinCount, data=new Uint8Array(len);
+        function loop() {
+            if(!isPlaying) return;
+            requestAnimationFrame(loop); ana.getByteFrequencyData(data);
+            vctx.clearRect(0,0,vc.width,vc.height);
+            let b=0; for(let i=0;i<6;i++) b+=data[i];
+            lamp.className = (b/6 > 230) ? "detect-lamp on" : "detect-lamp"; 
+            if(Math.random()>0.98) addLog(logs[Math.floor(Math.random()*logs.length)]);
+            let barW = (vc.width/len)*2.5, x=0;
+            for(let i=0; i<len; i++) {
+                let h = (data[i]/255) * vc.height * 0.4; 
+                vctx.fillStyle = `hsl(${200 + (i*2)}, 100%, 50%)`; 
+                vctx.fillRect(x, vc.height-h, barW, h); x+=barW+1;
+            }
+        }
+        loop();
+        srcNode.onended = () => { isPlaying=false; btnPlay.innerText="PREVIEW"; btnPlay.classList.remove('playing'); lamp.className="detect-lamp"; };
+    }
+
+    async function renderWav() {
+        if(!buffer) return;
+        btnSave.innerText = "RENDERING..."; addLog("PROCESSING HIGH QUALITY AUDIO...");
+        let off = new OfflineAudioContext(2, buffer.length, buffer.sampleRate);
+        let src = off.createBufferSource(); src.buffer = buffer;
+        chain(off, src, off.destination); src.start(0);
+        let res = await off.startRendering();
+        setTimeout(() => { save(res); btnSave.innerText = "SAVE HQ WAV"; addLog("FINISHED."); }, 500);
+    }
+
+    function save(b) {
+        let c=b.numberOfChannels, l=b.length*c*3+44, buf=new ArrayBuffer(l), v=new DataView(buf), o=0;
+        const S=(s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));o+=s.length;};
+        const I=(n)=>{v.setUint32(o,n,true);o+=4;}; const s=(n)=>{v.setUint16(o,n,true);o+=2;};
+        S("RIFF"); I(l-8); S("WAVE"); S("fmt "); I(16); s(1); s(c); I(b.sampleRate); I(b.sampleRate*3*c); s(c*3); s(24); S("data"); I(l-44);
+        let d=[]; for(let i=0;i<c;i++) d.push(b.getChannelData(i));
+        let p=0;
+        while(p<b.length){
+            for(let i=0;i<c;i++){
+                let s=Math.max(-1,Math.min(1,d[i][p])); s=s<0?s*0x800000:s*0x7FFFFF; s=Math.round(s);
+                v.setUint8(o,s&0xFF); v.setUint8(o+1,(s>>8)&0xFF); v.setUint8(o+2,(s>>16)&0xFF); o+=3;
+            } p++;
+        }
+
+        let blob = new Blob([buf], {type: "audio/wav"});
+        
+        if (window.AppInventor && window.AppInventor.setWebViewString) {
+            let reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = function() {
+                window.AppInventor.setWebViewString("SAVEDATA:" + reader.result);
+            }
+        } else {
+            let a=document.createElement("a"); 
+            a.href=URL.createObjectURL(blob);
+            a.download="Master_Pro_Audio.wav"; 
+            a.click();
+        }
+    }
+</script>
+
+</body>
+</html>
